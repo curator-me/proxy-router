@@ -53,7 +53,7 @@ def _event_type(block: str) -> str:
             try:
                 payload = json.loads(line[len("data:"):].strip())
 
-                if model == 1:
+                if model:
                     name = payload.get("type", name)
                 else:
                     name = payload.get("object", name)
@@ -65,10 +65,10 @@ def _event_type(block: str) -> str:
 
 def _should_drop(event_type: str) -> bool:
     if not event_type:
-        print("1" + str(type(event_type)))
+        print(str(type(event_type)))
         return False  # comments / keep-alives — pass through
     if event_type == "billing_summary" or event_type == "billing.summary":
-        print("2" + str(type(event_type)))
+        print(str(type(event_type)))
         return True
     if STRICT_FILTER and event_type not in ANTHROPIC_EVENTS:
         return True
@@ -109,7 +109,7 @@ async def list_models(request: Request):
         ids = [m.get("id") for m in payload.get("data", [])]
         print(f"=== MODELS ({len(ids)}): {ids}")
     except Exception:
-        print(f"=== MODELS raw ({r.status_code}): {r.text[:2000]}")
+        print(f"=== MODELS raw ({r.status_code}): {r.text[:500]}")
 
     resp_headers = {k: v for k, v in r.headers.items() if k.lower() not in HOP_BY_HOP}
     return Response(content=r.content, status_code=r.status_code,
@@ -129,10 +129,10 @@ async def proxy(request: Request, path: str):
         url += f"?{request.url.query}"
 
     print(f"\n=== REQUEST -> {url} ===")
-    if(url == "https://agentrouter.org/v1/messages"):
+    if(path == "v1/messages"):
         model = 1
     else:
-        model = 2
+        model = 0
 
     client = httpx.AsyncClient(timeout=httpx.Timeout(600.0, connect=15.0))
     req = client.build_request(request.method, url, headers=headers, content=body)
