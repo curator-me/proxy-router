@@ -75,27 +75,46 @@ def _should_drop(event_type: str) -> bool:
     return False
 
 
-def _fwd_headers(request: Request) -> dict:
-    return {k: v for k, v in request.headers.items() if k.lower() not in HOP_BY_HOP}
-
-
 # --- Dedicated /v1/models endpoint (Kilo Code calls this on setup) -----------
 @app.get("/v1/models")
 async def list_models(request: Request):
     print("\n=== MODELS REQUEST -> /v1/models ===")
+
+    # Extract the API key from either auth style:
+    #   - OpenAI style:    Authorization: Bearer sk-xxx
+    #   - Anthropic style: x-api-key: sk-xxx
+    api_key = ""
+    auth = request.headers.get("authorization", "")
+    if auth.lower().startswith("bearer "):
+        api_key = auth[len("bearer "):].strip()
+    if not api_key:
+        api_key = request.headers.get("x-api-key", "").strip()
+
+    if not api_key:
+        print(">>> No API key found in Authorization or x-api-key header")
+
+    # Build clean upstream headers (match the known-working curl request)
+    upstream_headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+        "User-Agent": "opencode/1.0.0",
+        "X-Client": "opencode",
+    }
+
     async with httpx.AsyncClient(timeout=30.0) as client:
-        r = await client.get(f"{UPSTREAM}/v1/models", headers=_fwd_headers(request))
+        r = await client.get(f"{UPSTREAM}/v1/models", headers=upstream_headers)
+
     try:
         payload = r.json()
         ids = [m.get("id") for m in payload.get("data", [])]
         print(f"=== MODELS ({len(ids)}): {ids}")
     except Exception:
         print(f"=== MODELS raw ({r.status_code}): {r.text[:2000]}")
+
     resp_headers = {k: v for k, v in r.headers.items() if k.lower() not in HOP_BY_HOP}
     return Response(content=r.content, status_code=r.status_code,
                     headers=resp_headers,
                     media_type=r.headers.get("content-type", "application/json"))
-
 
 # --- Dedicated endpoint to filter out non-standard events (Kilo Code calls this on setup) -----------
 @app.api_route("/{path:path}", methods=["GET", "POST"])
