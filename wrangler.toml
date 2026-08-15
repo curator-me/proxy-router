@@ -1,0 +1,20 @@
+name = "agentrouter-proxy"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+[vars]
+UPSTREAM = "https://agentrouter.org"
+# "true"  = drop ALL non-standard SSE events (recommended)
+# "false" = drop only the billing_summary events
+STRICT_FILTER = "true"
+
+# Set the shared secret clients must send as `X-Proxy-Secret: <value>`:
+#   wrangler secret put PROXY_SECRET
+
+# Increase if you hit CPU limits on very chatty streams (paid plans only).
+# [limits]
+# cpu_ms = 50
+
+# If you want the worker reachable at /v1/... exactly like the local
+# uvicorn setup, just point Kilo Code's base URL at:
+#   https://agentrouter-proxy.<your-subdomain>.workers.dev/v1
