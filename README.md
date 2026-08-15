@@ -1,10 +1,10 @@
 # Agent Router Proxy
 
-A Cloudflare Worker that proxies and filters SSE (Server-Sent Events) streams between [Kilo Code](https://kilocode.ai) / OpenCode and the [AgentRouter](https://agentrouter.org) API.
+A Cloudflare Worker that proxies and filters SSE (Server-Sent Events) streams between AI agents and the [AgentRouter](https://agentrouter.org) API.
 
 ## What it does
 
-- **SSE event filtering**: Drops non-standard events (e.g. `billing_summary`) from the upstream stream so Kilo Code only sees valid Anthropic/OpenAI events.
+- **SSE event filtering**: Drops non-standard events (e.g. `billing_summary`) from the upstream stream so any agent sees valid Anthropic/OpenAI events.
 - **Header sanitization**: Strips hop-by-hop headers before forwarding responses.
 - **Dual auth support**: Accepts API keys via either `Authorization: Bearer` (OpenAI style) or `x-api-key` (Anthropic style).
 - **Mirror of the original FastAPI proxy**: Behaves identically to the Python reference implementation.
@@ -25,7 +25,7 @@ wrangler dev
 wrangler deploy
 ```
 
-After deploying, point Kilo Code's base URL at your worker:
+After deploying, point any compatible agent's base URL at your worker:
 
 ```
 https://<your-worker>.<your-subdomain>.workers.dev/v1
